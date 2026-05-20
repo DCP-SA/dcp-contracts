@@ -1,5 +1,5 @@
 {
-  "name": "@dcp/contracts",
+  "name": "@dcp-sa/contracts",
   "version": "0.1.0",
   "description": "DCP shared API contracts — TypeScript types generated from openapi/dcp.yaml",
   "license": "UNLICENSED",
@@ -13,6 +13,6 @@
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
-    "access": "restricted"
+    "access": "public"
   }
 }
