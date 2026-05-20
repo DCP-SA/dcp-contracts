@@ -1,0 +1,248 @@
+openapi: 3.1.0
+info:
+  title: DCP API contracts
+  version: 0.1.0
+  description: |
+    Shared API contracts between dcp-platform (backend) and the two clients
+    that talk to it: dcp-agent (provider brain) and dcp-desktop (Tauri installer).
+
+    This spec is the single source of truth. TS + Python types are generated
+    from this file; do not hand-edit the generated outputs.
+
+    Endpoints below are STUBS to establish the pattern. Add the rest of the
+    real API surface (renter inference proxy, billing, etc.) by extending this
+    spec — never by adding hand-written types in the client repos.
+
+servers:
+  - url: https://api.dcp.sa
+    description: Production
+  - url: http://localhost:3000
+    description: Local backend
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/providers/{provider_id}/heartbeat:
+    post:
+      operationId: providerHeartbeat
+      summary: Provider daemon heartbeat
+      description: |
+        Provider daemon (dcp-agent) sends every ~30s with current state.
+        Backend may return queued tasks (e.g. model_preload) for the daemon to execute.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HeartbeatRequest"
+      responses:
+        "200":
+          description: Heartbeat acknowledged, optional task queue returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeartbeatResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/providers/register:
+    post:
+      operationId: providerRegister
+      summary: Register a new provider (called by dcp-desktop setup wizard)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderRegistration"
+      responses:
+        "200":
+          description: Provider created, returns id + api_key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderRegistrationResponse"
+
+  /agent/manifest.json:
+    get:
+      operationId: getAgentManifest
+      summary: Signed manifest for dcp-agent self-update
+      description: |
+        Returns the safe_commit SHA + rollout percentage. Provider's self-update
+        cron only checks out the safe_commit if (sha256(provider_id) mod 100) < rollout_pct.
+      responses:
+        "200":
+          description: Current manifest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentManifest"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    HeartbeatRequest:
+      type: object
+      required: [version, status, gpu_info, models]
+      properties:
+        version:
+          type: string
+          description: Agent semver
+          example: "0.6.0"
+        status:
+          type: string
+          enum: [online, busy, paused, error]
+        wg_mesh_ip:
+          type: string
+          description: WireGuard mesh IP if joined, else absent
+          example: "10.8.0.6"
+        gpu_info:
+          $ref: "#/components/schemas/GpuInfo"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelStatus"
+        cached_models:
+          type: array
+          items:
+            type: string
+          description: Model aliases ready to serve (deprecated — derived from models[])
+
+    HeartbeatResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingTask"
+
+    GpuInfo:
+      type: object
+      required: [vendor, count, total_vram_gb]
+      properties:
+        vendor:
+          type: string
+          enum: [nvidia, amd, apple, intel]
+        count:
+          type: integer
+          minimum: 1
+        total_vram_gb:
+          type: number
+        cards:
+          type: array
+          items:
+            type: object
+            properties:
+              model:
+                type: string
+              vram_gb:
+                type: number
+              compute_capability:
+                type: string
+
+    ModelStatus:
+      type: object
+      required: [alias, engine, ready]
+      properties:
+        alias:
+          type: string
+          example: "qwen3.6-27b-mtp"
+        engine:
+          type: string
+          enum: [ollama, vllm, llamacpp]
+        ready:
+          type: boolean
+        port:
+          type: integer
+        context_window:
+          type: integer
+          example: 32768
+
+    PendingTask:
+      type: object
+      required: [task_id, kind, payload]
+      properties:
+        task_id:
+          type: string
+        kind:
+          type: string
+          enum: [model_preload, model_unload, restart, config_reload]
+        payload:
+          type: object
+          additionalProperties: true
+
+    ProviderRegistration:
+      type: object
+      required: [email, gpu_info, location_country]
+      properties:
+        email:
+          type: string
+          format: email
+        gpu_info:
+          $ref: "#/components/schemas/GpuInfo"
+        location_country:
+          type: string
+          description: ISO 3166-1 alpha-2
+          example: "SA"
+
+    ProviderRegistrationResponse:
+      type: object
+      required: [provider_id, api_key]
+      properties:
+        provider_id:
+          type: integer
+        api_key:
+          type: string
+          description: dcp-provider-XXXX... — keep secret
+
+    AgentManifest:
+      type: object
+      required: [safe_commit, rollout_pct, published_at]
+      properties:
+        safe_commit:
+          type: string
+          pattern: "^[0-9a-f]{40}$"
+        rollout_pct:
+          type: integer
+          minimum: 0
+          maximum: 100
+        published_at:
+          type: string
+          format: date-time
+        min_tag:
+          type: string
+          description: Optional minimum semver tag
+          example: "v0.6.0"
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string

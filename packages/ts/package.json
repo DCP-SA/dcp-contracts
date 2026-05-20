@@ -1,0 +1,18 @@
+{
+  "name": "@dcp/contracts",
+  "version": "0.1.0",
+  "description": "DCP shared API contracts — TypeScript types generated from openapi/dcp.yaml",
+  "license": "UNLICENSED",
+  "private": false,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": ["src"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DCP-SA/dcp-contracts.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "restricted"
+  }
+}

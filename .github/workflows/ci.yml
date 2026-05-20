@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate-and-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python generator
+        run: pip install datamodel-code-generator==0.25.6
+
+      - name: Validate spec
+        run: npx --yes @redocly/cli@latest lint openapi/dcp.yaml
+
+      - name: Regenerate
+        run: ./scripts/generate.sh
+
+      - name: Fail if generated files drifted from spec
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated files are stale. Run ./scripts/generate.sh and commit."
+            git status
+            git diff
+            exit 1
+          fi
