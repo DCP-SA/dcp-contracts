@@ -1053,13 +1053,13 @@ export interface components {
             timestamp?: string;
             uptime_seconds?: number;
             model_loaded?: string;
-            tasks?: components["schemas"]["PendingTask"][];
+            pending_tasks?: components["schemas"]["PendingTask"][];
         };
         PendingTask: {
             task_id: string;
             /** @enum {string} */
-            kind: "model_preload" | "model_unload" | "restart" | "config_reload" | "pull_model";
-            payload?: {
+            task_type: "model_preload" | "model_unload" | "restart" | "config_reload" | "pull_model";
+            params?: {
                 [key: string]: unknown;
             };
         };

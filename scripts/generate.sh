@@ -32,10 +32,12 @@ datamodel-codegen \
   --input "$SPEC" \
   --input-file-type openapi \
   --output "$ROOT/packages/python/dcp_contracts/__init__.py" \
+  --output-model-type pydantic_v2.BaseModel \
   --target-python-version 3.10 \
   --use-standard-collections \
   --use-union-operator \
-  --field-constraints
+  --field-constraints \
+  --disable-timestamp
 
 echo "✓ generated"
 echo "  → packages/ts/src/index.ts"
