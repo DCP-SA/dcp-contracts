@@ -2138,21 +2138,21 @@ components:
           type: integer
         model_loaded:
           type: string
-        tasks:
+        pending_tasks:
           type: array
           items:
             $ref: "#/components/schemas/PendingTask"
 
     PendingTask:
       type: object
-      required: [task_id, kind]
+      required: [task_id, task_type]
       properties:
         task_id:
           type: string
-        kind:
+        task_type:
           type: string
           enum: [model_preload, model_unload, restart, config_reload, pull_model]
-        payload:
+        params:
           type: object
           additionalProperties: true
 
