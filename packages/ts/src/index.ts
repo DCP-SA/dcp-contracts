@@ -1084,7 +1084,7 @@ export interface components {
             context_window?: number;
         };
         ProviderLivenessResponse: {
-            provider_id: string;
+            provider_id: number | string;
             /** @enum {string} */
             liveness_status: "online" | "stale" | "offline";
             /** Format: date-time */

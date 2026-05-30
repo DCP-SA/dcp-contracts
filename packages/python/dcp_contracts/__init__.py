@@ -461,7 +461,7 @@ class LivenessStatus(Enum):
 
 
 class ProviderLivenessResponse(BaseModel):
-    provider_id: str
+    provider_id: int | str
     liveness_status: LivenessStatus
     last_heartbeat: AwareDatetime | None = None
     heartbeat_age_seconds: int | None = None
